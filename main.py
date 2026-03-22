@@ -47,14 +47,24 @@ class PortReq(BaseModel): portfolio_value: float;
 class FireReq(BaseModel): age: int; income: float; retire_age: int; expenses: float; corpus: float; goals: str; life_expectancy: int; step_up_pct: float;
 class TranslateReq(BaseModel): text: str; language: str
 
+# --- 🔥 THE BULLETPROOF MODEL FALLBACK LOGIC 🔥 ---
 def get_high_quota_models():
     try:
+        # API se dynamically pucho ki uske paas actually kaunse models available hain
         available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        priorities = ['gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.0-pro']
+        
+        # Humari priority list (jo best hai usko pehle try karega)
+        priorities = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro']
+        
         safe_models = [m for m in priorities if m in available_models]
-        return safe_models if safe_models else available_models
+        if safe_models:
+            return safe_models
+        elif available_models:
+            return available_models
+        else:
+            return ['gemini-pro'] # Ultimate safe fallback
     except:
-        return ['gemini-1.5-flash']
+        return ['gemini-1.5-flash-latest', 'gemini-pro']
 
 # Standard generation for strictly formatted English reports (The Core Engine)
 def safe_generate(prompt: str, image_part: dict = None) -> str:
