@@ -101,29 +101,29 @@ git clone https://github.com/YOUR_USERNAME/et-money-mentor.git
 cd et-money-mentor
 ```
 
-# 2. Create virtual environment
+## 2. Create virtual environment
 python -m venv venv
 
-# 3. Activate venv
-# Windows:
+## 3. Activate venv
+### Windows:
 venv\Scripts\activate
 
-# Mac/Linux:
+### Mac/Linux:
 # source venv/bin/activate
 
-# 4. Install dependencies
+## 4. Install dependencies
 pip install fastapi uvicorn google-generativeai pydantic python-dotenv python-multipart
 
-# 5. Create .env file
+## 5. Create .env file
 echo GEMINI_API_KEY=your_api_key_here > .env
 
-# 6. Run server
+## 6. Run server
 uvicorn main:app --reload
 
-# 7. Environment Variables
+## 7. Environment Variables
 GEMINI_API_KEY=your_api_key_here
 
-# 8. Future Enhancements
+## 8. Future Enhancements
 **Broker integrations
 **Real-time market insights
 **Mobile app
