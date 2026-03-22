@@ -49,22 +49,8 @@ class TranslateReq(BaseModel): text: str; language: str
 
 # --- 🔥 THE BULLETPROOF MODEL FALLBACK LOGIC 🔥 ---
 def get_high_quota_models():
-    try:
-        # API se dynamically pucho ki uske paas actually kaunse models available hain
-        available_models = [m.name.replace('models/', '') for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        
-        # Humari priority list (jo best hai usko pehle try karega)
-        priorities = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.0-pro', 'gemini-pro']
-        
-        safe_models = [m for m in priorities if m in available_models]
-        if safe_models:
-            return safe_models
-        elif available_models:
-            return available_models
-        else:
-            return ['gemini-pro'] # Ultimate safe fallback
-    except:
-        return ['gemini-1.5-flash-latest', 'gemini-pro']
+    # Bhaad me gaya dynamic check. Seedha latest Google models use karenge.
+    return ["gemini-1.5-flash", "gemini-1.5-pro"]
 
 # Standard generation for strictly formatted English reports (The Core Engine)
 def safe_generate(prompt: str, image_part: dict = None) -> str:
