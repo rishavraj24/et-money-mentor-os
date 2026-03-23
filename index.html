@@ -113,7 +113,6 @@
         .audio-progress-bar { flex-grow: 1; -webkit-appearance: none; width: 100%; min-width: 150px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 5px; outline: none; border: none; cursor: pointer; }
         .audio-progress-bar::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--et-red); cursor: pointer; transition: 0.2s;}
         
-        /* NEW TRANSLATE BUTTON UI */
         .translate-group { display: flex; align-items: center; gap: 5px; margin-left: auto;}
         .translate-group select { padding: 8px 12px; border-radius: 8px; background: #3b82f6; color: white; border: none; font-weight: 600; cursor: pointer; outline: none; transition: 0.3s;}
         .translate-group select:hover { background: #2563eb; }
@@ -312,7 +311,8 @@
     </div>
 
     <script>
-        const API_URL = "http://127.0.0.1:8000/api";
+        // 🔥 SIRF YEH LINE CHANGE HUI HAI - Ab localhost ko force nahi karega, relative url use karega 🔥
+        const API_URL = "/api";
         
         let globalNW = 0, globalTax = 0, globalHealth = 0, hasData = false;
         let fireChartObj = null, healthChartObj = null, eventChartObj = null;
@@ -324,7 +324,6 @@
             loadChatHistory();
         };
 
-        // --- 🔥 CHAT SPECIFIC LANGUAGE HANDLER 🔥 ---
         function handleChatLanguageChange(clearHistory = true) {
             saveInputs();
             const lang = document.getElementById('chatLang').value;
@@ -531,7 +530,6 @@
             } catch(e) { status.innerText = "⚠️ Connection Error to Backend."; status.style.color = "var(--c-loss)"; }
         }
 
-        // --- AUDIO PLAYER ENGINE ---
         let currentUtterance = null; let isPlaying = false; let currentBtnId = null; let intentionalCancel = false; let globalChunkIndex = 0; 
         
         window.speechSynthesis.getVoices();
@@ -601,7 +599,6 @@
             
             const speed = parseFloat(document.getElementById(speedId).value);
             
-            // Localized audio based on translation dropdown if it exists
             const featureId = textContainerId.replace('Text', '');
             const transSelect = document.getElementById(`translate-${featureId}`);
             const reportLang = transSelect ? transSelect.value : "English";
@@ -645,7 +642,6 @@
             speakNextChunk();
         }
 
-        // --- PDF ENGINE ---
         function exportToPdf(featureId) {
             const resultElement = document.getElementById(`${featureId}Res`);
             if (!resultElement) return;
@@ -754,7 +750,6 @@
             setTimeout(() => { btn.innerHTML = originalBtnText; btn.disabled = false; }, 2000);
         }
 
-        // --- 🔥 NEW TRANSLATE FUNCTION 🔥 ---
         async function translateReport(featureId, lang) {
             const reportDiv = document.getElementById(featureId + 'Text');
             if(!reportDiv || !reportDiv.dataset.rawMarkdown) return;
@@ -770,13 +765,11 @@
                 });
                 const data = await res.json();
                 reportDiv.innerHTML = formatMarkdown(data.translated_text);
-                // Note: We DO NOT overwrite the dataset.rawMarkdown so user can translate back to English easily
             } catch(e) {
                 reportDiv.innerHTML = formatMarkdown(rawMarkdown) + "<br><p style='color:var(--c-loss)'>⚠️ Translation failed.</p>";
             }
         }
 
-        // 🔥 ADDED TRANSLATE DROPDOWN TO CONTROL BAR 🔥
         function getControlBarHTML(featureId) {
             return `
             <div class="audio-player-bar">
@@ -887,7 +880,6 @@
             } finally { document.getElementById(loaderId).style.display = 'none'; btn.style.display = 'block'; }
         }
 
-        // --- Features Render (Saves Raw Markdown for Translation) ---
         async function calcFire(btn) {
             const data = await apiCall('fire', { age: +document.getElementById('fAge').value, income: +document.getElementById('fInc').value, retire_age: +document.getElementById('fRet').value, expenses: +document.getElementById('fExp').value, corpus: +document.getElementById('fCorp').value, goals: document.getElementById('fGoal').value, life_expectancy: +document.getElementById('fLife').value, step_up_pct: parseFloat(document.getElementById('fStep').value) }, btn, 'fireLoading', 'fireRes');
             if(data && !data.error) {
@@ -898,7 +890,7 @@
                     ${getControlBarHTML('fire')}
                     <div class="ai-report" id="fireText" style="margin-top:0;">${formatMarkdown(data.report)}</div>
                 `;
-                document.getElementById('fireText').dataset.rawMarkdown = data.report; // 🔥 SAVE FOR TRANSLATION
+                document.getElementById('fireText').dataset.rawMarkdown = data.report; 
                 document.getElementById('fireRes').style.display = 'block';
                 initAudioDur('fireText', 'dur-fire', 'speed-fire');
                 if(fireChartObj) fireChartObj.destroy();
