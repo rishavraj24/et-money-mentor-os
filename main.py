@@ -46,8 +46,25 @@ class PortReq(BaseModel): portfolio_value: float;
 class FireReq(BaseModel): age: int; income: float; retire_age: int; expenses: float; corpus: float; goals: str; life_expectancy: int; step_up_pct: float;
 class TranslateReq(BaseModel): text: str; language: str
 
+# --- 🔥 THE IMMORTAL MODEL SELECTOR 🔥 ---
 def get_high_quota_models():
-    return ["gemini-2.5-flash"]
+    try:
+        smart_models = []
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                # Sirf 'flash' models dhundho kyunki wo fast aur free tier me best hain
+                if 'flash' in m.name.lower():
+                    smart_models.append(m.name.replace('models/', ''))
+        
+        if smart_models:
+            # PRO HACK: 1.5-flash ko list me sabse aage rakho kyunki uski API limit sabse zyada (15/min) hai.
+            # Agar wo fail hua (429), toh code automatically next available model try karega!
+            sorted_models = sorted(smart_models, key=lambda x: '1.5' in x, reverse=True)
+            return sorted_models
+            
+        return ["gemini-1.5-flash"]
+    except:
+        return ["gemini-1.5-flash"]
 
 def safe_generate(prompt: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
@@ -72,6 +89,7 @@ def safe_generate(prompt: str, image_part: dict = None) -> str:
             response = model.generate_content(content_payload, safety_settings=safe_config)
             return response.text
         except Exception as e:
+            # Agar 429 (Quota) ya 404 aaya, toh error save karo aur chup-chaap next model pe jao
             last_error = str(e)
             continue
     return f"⚠️ API Error: {last_error}"
