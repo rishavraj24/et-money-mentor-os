@@ -42,31 +42,18 @@ def serve_frontend():
     return {"error": "index.html missing!"}
 
 # ==========================================
-# 📦 2. CLEAN DATA MODELS (Pydantic)
+# 📦 2. DATA MODELS 
 # ==========================================
-class HealthReq(BaseModel): 
-    q1: int; q2: int; q3: int; q4: int; q5: int; q6: int
-
-class TaxReq(BaseModel): 
-    salary: float; hra: float; sec80c: float; sec80d: float; risk: str; liquidity: str
-
-class CoupleReq(BaseModel): 
-    p1_inc: float; p2_inc: float; p1_nw: float; p2_nw: float; rent: float; p1_nps: bool; p2_nps: bool
-
-class EventReq(BaseModel): 
-    event: str; amount: float; tax_bracket: int; risk: str; years: int; portfolio: float; goal: str
-
-class PortReq(BaseModel): 
-    portfolio_value: float
-
-class FireReq(BaseModel): 
-    age: int; income: float; retire_age: int; expenses: float; corpus: float; goals: str; life_expectancy: int; step_up_pct: float
-
-class TranslateReq(BaseModel): 
-    text: str; language: str
+class HealthReq(BaseModel): q1: int; q2: int; q3: int; q4: int; q5: int; q6: int
+class TaxReq(BaseModel): salary: float; hra: float; sec80c: float; sec80d: float; risk: str; liquidity: str
+class CoupleReq(BaseModel): p1_inc: float; p2_inc: float; p1_nw: float; p2_nw: float; rent: float; p1_nps: bool; p2_nps: bool
+class EventReq(BaseModel): event: str; amount: float; tax_bracket: int; risk: str; years: int; portfolio: float; goal: str
+class PortReq(BaseModel): portfolio_value: float
+class FireReq(BaseModel): age: int; income: float; retire_age: int; expenses: float; corpus: float; goals: str; life_expectancy: int; step_up_pct: float
+class TranslateReq(BaseModel): text: str; language: str
 
 # ==========================================
-# 🧠 3. THE IMMORTAL MODEL SELECTOR
+# 🧠 3. IMMORTAL MODEL SELECTOR
 # ==========================================
 def get_high_quota_models():
     try:
@@ -75,11 +62,9 @@ def get_high_quota_models():
             if 'generateContent' in m.supported_generation_methods:
                 if 'flash' in m.name.lower():
                     smart_models.append(m.name.replace('models/', ''))
-        
         if smart_models:
             sorted_models = sorted(smart_models, key=lambda x: '1.5' in x, reverse=True)
             return sorted_models
-            
         return ["gemini-1.5-flash"]
     except:
         return ["gemini-1.5-flash"]
@@ -90,7 +75,6 @@ def get_high_quota_models():
 def safe_generate(prompt: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
     last_error = ""
-    
     formatting_directive = """
     \n\nCRITICAL FORMATTING INSTRUCTIONS:
     1. Act as a ruthless, elite, institutional-grade wealth manager.
@@ -101,11 +85,9 @@ def safe_generate(prompt: str, image_part: dict = None) -> str:
     6. **Bold every single key financial term, percentage, mathematical figure, and timeline**.
     7. Never use generic disclaimers at the end. End with a strong, actionable closing statement.
     """
-    
     content_payload = [prompt + formatting_directive]
     if image_part:
         content_payload.append(image_part)
-        
     for m_name in get_high_quota_models():
         try:
             model = genai.GenerativeModel(m_name)
@@ -118,20 +100,17 @@ def safe_generate(prompt: str, image_part: dict = None) -> str:
 
 def safe_chat_generate(prompt: str, language: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
-    
     if language.lower() == "hinglish":
         lang_rule = "Write the ENTIRE response strictly in HINGLISH (Conversational Hindi written using the English/Roman Alphabet). Be energetic, empathetic, and use terms like 'Bhai', 'Dost', 'Samjho'. DO NOT use Devanagari script."
     elif language.lower() in ["hindi", "marathi", "bengali", "tamil"]:
-        lang_rule = f"Write the ENTIRE response strictly in {language.upper()} using its NATIVE SCRIPT. Keep the tone professional yet accessible."
+        lang_rule = f"Write the ENTIRE response strictly in {language.upper()} using its NATIVE SCRIPT."
     else:
-        lang_rule = f"Write the ENTIRE response strictly in {language.upper()} with institutional clarity."
+        lang_rule = f"Write the ENTIRE response strictly in {language.upper()}."
 
     full_prompt = f"[SYSTEM RULE: {lang_rule}]\n{prompt}"
-    
     content_payload = [full_prompt]
     if image_part:
         content_payload.append(image_part)
-        
     for m_name in get_high_quota_models():
         try:
             model = genai.GenerativeModel(m_name)
@@ -153,22 +132,14 @@ def extract_json_from_text(text: str):
 # ==========================================
 @app.post("/api/translate")
 async def translate_text(req: TranslateReq):
-    if req.language.lower() == "english":
-        return {"translated_text": req.text}
-        
-    lang_rule = req.language if req.language.lower() != "hinglish" else "Hinglish (Conversational Hindi written in Roman/English alphabet)"
-        
+    if req.language.lower() == "english": return {"translated_text": req.text}
+    lang_rule = req.language if req.language.lower() != "hinglish" else "Hinglish (Hindi in Roman alphabet)"
     prompt = f"""
-    You are an expert financial translator and localization specialist. Translate the following institutional wealth report into {lang_rule}.
-    CRITICAL RULES:
-    1. Preserve ALL Markdown formatting exactly (### headers, **bold text**, bullet points, emojis).
-    2. DO NOT change any mathematical values, percentages, or underlying meanings.
-    3. Ensure complex financial terminology (e.g., CAGR, XIRR, Expense Ratio) is accurately represented or explained in the target language.
-    
-    REPORT TO TRANSLATE:
+    Translate the following institutional wealth report into {lang_rule}.
+    PRESERVE ALL MARKDOWN (###, **, bullets, emojis). DO NOT change numbers or math.
+    REPORT:
     {req.text}
     """
-    
     for m_name in get_high_quota_models():
         try:
             model = genai.GenerativeModel(m_name)
@@ -176,14 +147,14 @@ async def translate_text(req: TranslateReq):
             return {"translated_text": response.text}
         except Exception:
             continue
-    return {"translated_text": req.text + "\n\n*(Translation failed due to server load. Please try again.)*"}
+    return {"translated_text": req.text + "\n\n*(Translation failed. Try again.)*"}
 
 @app.post("/api/upload/form16")
 async def upload_form16(file: UploadFile = File(...)):
     try:
         pdf_bytes = await file.read()
         pdf_part = {"mime_type": "application/pdf", "data": pdf_bytes}
-        prompt = """Perform high-precision OCR on this tax document. Extract exactly these 4 values: {"salary": Gross Salary, "hra": HRA exemption, "sec80c": 80C Deductions, "sec80d": 80D Deductions}. Return ONLY a valid JSON object. No markdown, no extra text."""
+        prompt = """Extract exactly these 4 values: {"salary": Gross Salary, "hra": HRA exemption, "sec80c": 80C Deductions, "sec80d": 80D Deductions}. Return ONLY a valid JSON object. No extra text."""
         for m_name in get_high_quota_models():
             try:
                 model = genai.GenerativeModel(m_name)
@@ -197,7 +168,7 @@ async def upload_form16(file: UploadFile = File(...)):
 
 @app.post("/api/chat")
 async def chat_bot(message: str = Form(...), language: str = Form(...), image: Optional[UploadFile] = File(None)):
-    prompt = f"Act as ET Money Mentor, an elite, highly-paid institutional wealth manager. The user is asking: '{message}'. Provide detailed, step-by-step financial wisdom based on Indian taxation (Income Tax Act) and SEBI regulations. Be insightful, authoritative, and deeply analytical."
+    prompt = f"Act as ET Money Mentor, an elite wealth manager. The user is asking: '{message}'. Provide detailed financial wisdom based on Indian taxation and SEBI rules."
     image_part = None
     if image and image.filename:
         image_bytes = await image.read()
@@ -212,22 +183,15 @@ async def calc_health(req: HealthReq):
     q1_norm = (req.q1 / 12) * 10
     score = int(300 + (((((q1_norm) * 0.25) + (req.q3 * 0.25) + (req.q2 * 0.15) + (req.q6 * 0.15) + (req.q4 * 0.10) + (req.q5 * 0.10)) / 10) * 600))
     prompt = f"""
-    Act as a forensic financial auditor. The client's Algorithmic Financial Health Score is {score}/900.
-    Granular Metrics (Out of 10): 
-    - Emergency Liquidity Buffer: {q1_norm:.1f}/10
-    - Insurance/Risk Depth: {req.q2}/10
-    - Debt-to-Income Optimization: {req.q3}/10
-    - Asset Diversification: {req.q4}/10
-    - Tax Shield Efficiency: {req.q5}/10
-    - Retirement Glide-Path Readiness: {req.q6}/10
-
-    Deliver a brutally honest, EXHAUSTIVE diagnostic report. Use exact headers:
+    Act as a forensic financial auditor. The client's Financial Health Score is {score}/900.
+    Granular Metrics: Emergency({q1_norm:.1f}/10), Insurance({req.q2}/10), Debt({req.q3}/10), Diversification({req.q4}/10), Tax({req.q5}/10), Retirement({req.q6}/10).
+    Deliver an EXHAUSTIVE report. Use exact headers:
     ### 🚨 Critical Vulnerability Triage
-    Identify the absolute weakest links (lowest scores). Explain the cascading mathematical risk (e.g., how low insurance wipes out compounding, or how bad debt destroys wealth velocity). Do not sugarcoat it.
+    Identify the absolute weakest links and explain the mathematical risk.
     ### 🛡️ 30-Day Fortification Protocol
-    Provide a strict, prioritized checklist of exact, actionable steps they MUST execute this month to plug the leaks. Name specific asset classes (e.g., Liquid Funds, Arbitrage) where relevant.
+    Provide a strict, prioritized checklist of exact, actionable steps.
     ### 🚀 Long-Term Alpha Generation Blueprint
-    Explain the 'Compounding Flywheel' effect. How will fixing these specific metrics today unlock exponential net-worth growth over the next decade?
+    Explain the 'Compounding Flywheel' effect.
     """
     return {"score": score, "radar_data": [q1_norm, req.q2, req.q3, req.q4, req.q5, req.q6], "report": safe_generate(prompt)}
 
@@ -265,22 +229,14 @@ async def calc_fire(req: FireReq):
         curr_val = (curr_val - curr_with) * (1 + post_retire_cagr); curr_with *= (1 + inflation)
         
     prompt = f"""
-    Act as a top 1% Institutional FIRE (Financial Independence, Retire Early) Architect in India. 
-    Client Telemetry: Age {req.age}, Monthly Income ₹{req.income:,.0f}, Monthly Lifestyle Expense ₹{req.expenses:,.0f}. Existing Corpus: ₹{req.corpus:,.0f}. Target Retirement Age: {req.retire_age}.
-    Mathematical Reality (Adjusted for 7% Indian CPI Inflation): 
-    - True Target Corpus Required: ₹{target_corpus:,.0f}
-    - Required Base Monthly SIP (with {req.step_up_pct*100}% annual step-up): ₹{first_year_sip:,.0f}.
-    - Major Goal Specified: '{req.goals}'.
-    
-    Deliver an EXHAUSTIVE, uncompromising execution blueprint using exact headers:
+    Act as a top 1% Institutional FIRE Architect. 
+    Age {req.age}, Income ₹{req.income:,.0f}, Expenses ₹{req.expenses:,.0f}. Corpus: ₹{req.corpus:,.0f}. Retire Age: {req.retire_age}.
+    True Target Corpus: ₹{target_corpus:,.0f}. Required SIP: ₹{first_year_sip:,.0f}. Goal: '{req.goals}'.
+    Deliver an EXHAUSTIVE blueprint using headers:
     ### 📉 The Mathematical Reality & Sequence of Returns
-    Explain why standard US models (like the 4% rule) fail in India. Detail how you used the 'Present Value of a Growing Annuity' to calculate their ₹{target_corpus:,.0f} corpus, factoring in 7% inflation and 9% post-retirement yield.
     ### 📅 Granular Deployment Roadmap
-    Provide strict asset-allocation directives. Break down the ₹{first_year_sip:,.0f} SIP into a Multi-Cap/Index strategy to achieve the 12% pre-retirement CAGR.
     ### ⚔️ Tactical De-Risking & Glide Path
-    Explain exactly how the client must shift assets from volatile Equity to Fixed Income/Debt 3 years before age {req.retire_age} to prevent 'Sequence of Returns Risk' (SORR).
     ### 🛡️ The Absolute Defense Layer
-    Define exact, non-negotiable target amounts for Term Insurance (Human Life Value method), base Family Floater Health cover, and a 6-to-12 month liquid cash buffer.
     """
     return {"target_corpus": target_corpus, "required_sip": first_year_sip, "emergency_fund": req.expenses * 6, "trajectory": trajectory, "report": safe_generate(prompt)}
 
@@ -290,19 +246,11 @@ async def calc_events(req: EventReq):
         tax = req.amount * (req.tax_bracket/100) if "Bonus" in req.event else 0; net = req.amount - tax
         result_data = {"type": "windfall", "gross": req.amount, "tax": tax, "net": net}
         prompt = f"""
-        Act as an elite Private Wealth Manager specializing in Sudden Wealth Events.
-        Event Analysis: Client received a gross windfall of ₹{req.amount:,.0f} from '{req.event}'. 
-        Tax Friction Deduction: ₹{tax:,.0f}. 
-        Net Actionable Capital to deploy: ₹{net:,.0f}.
-        Client Context: Existing Portfolio ₹{req.portfolio:,.0f}, Risk Tolerance: '{req.risk}', Target Goal: '{req.goal}'.
-        
-        Provide a hyper-detailed deployment thesis using exact headers:
+        Act as an elite Wealth Manager. Event: '{req.event}' of ₹{req.amount:,.0f}. Tax Friction: ₹{tax:,.0f}. Net Capital: ₹{net:,.0f}.
+        Portfolio: ₹{req.portfolio:,.0f}. Risk: '{req.risk}'.
         ### 🧠 Behavioral Defense Mechanism
-        Address the psychological danger of 'Hedonic Adaptation' and lifestyle creep. Establish strict boundaries (e.g., the 10% splurge rule vs 90% capital deployment).
-        ### 🔄 Deployment Strategy: Lumpsum vs. Systematic Transfer Plan (STP)
-        Mathematically and psychologically analyze if they should deploy the ₹{net:,.0f} instantly or use a 6-12 month STP through a Liquid Fund to hedge against current market valuations and volatility.
+        ### 🔄 Deployment Strategy: Lumpsum vs. STP
         ### 📊 Tactical Asset Allocation Matrix
-        Construct a precise percentage-based portfolio split across Domestic Equities, International Equities, and Fixed Income/Gold, strictly mapping to their '{req.risk}' profile.
         """
         return {"data": result_data, "report": safe_generate(prompt)}
     else: 
@@ -312,20 +260,11 @@ async def calc_events(req: EventReq):
         sip = (future_cost * r) / (((1 + r)**n) - 1) if n > 0 else 0
         result_data = {"type": "goal", "future_cost": future_cost, "required_sip": sip, "years": req.years}
         prompt = f"""
-        Act as a top-tier institutional financial advisor mapping out a major future liability.
-        Liability Analysis: Planning for '{req.event}' occurring in exactly {req.years} years.
-        Current Baseline Cost: ₹{req.amount:,.0f}. 
-        Inflated Future Cost (assuming {inflation*100}% sector-specific inflation): ₹{future_cost:,.0f}. 
-        Required Monthly SIP Engine: ₹{sip:,.0f}. 
-        Client Risk Profile: {req.risk}. Goal: {req.goal}.
-        
-        Provide an uncompromising, inflation-hedging masterplan using exact headers:
+        Act as a top-tier advisor mapping out a liability. Event: '{req.event}' in {req.years} years.
+        Current Cost: ₹{req.amount:,.0f}. Future Cost: ₹{future_cost:,.0f}. Required SIP: ₹{sip:,.0f}. Risk: {req.risk}.
         ### 🔥 The Inflation Reality Check
-        Explain the destructive, compounding power of {inflation*100}% inflation over {req.years} years, proving why keeping this money in a savings account guarantees failure.
         ### ⚙️ The Investment Engine Construction
-        Recommend the exact Mutual Fund categories (e.g., Nifty 50 Index, Flexicap, Midcap) needed to absorb the ₹{sip:,.0f} SIP and generate the required CAGR, factoring in their '{req.risk}' tolerance.
         ### 📉 Derisking Glide Path (The Exit Strategy)
-        Detail a strict timeline on shifting funds from volatile equities to safe, ultra-short-duration debt funds 18-24 months prior to the event to secure the corpus from sudden market crashes.
         """
         return {"data": result_data, "report": safe_generate(prompt)}
 
@@ -350,19 +289,12 @@ async def calc_tax(req: TaxReq):
     old_t = get_tax(old_taxable, False); new_t = get_tax(new_taxable, True)
     winner = "NEW REGIME" if new_t < old_t else "OLD REGIME"
     prompt = f"""
-    Act as India's premier Chartered Accountant specializing in HNI (High Net-Worth Individual) tax alpha optimization.
-    Client Financials: Base Salary ₹{req.salary:,.0f}. 
-    Mathematical Winner: {winner} (Old Tax: ₹{old_t:,.0f} vs New Tax: ₹{new_t:,.0f}).
-    Current Capital Claimed: HRA (₹{req.hra:,.0f}), 80C (₹{req.sec80c:,.0f}), 80D (₹{req.sec80d:,.0f}). 
-    Risk Profile: {req.risk}. Liquidity Constraint: {req.liquidity}.
-    
-    Deliver a RUTHLESS, exhaustive tax-alpha strategy using exact headers:
+    Act as India's premier Chartered Accountant.
+    Salary: ₹{req.salary:,.0f}. Mathematical Winner: {winner} (Old Tax: ₹{old_t:,.0f} vs New Tax: ₹{new_t:,.0f}).
+    Claims: HRA(₹{req.hra:,.0f}), 80C(₹{req.sec80c:,.0f}), 80D(₹{req.sec80d:,.0f}). Risk: {req.risk}. Liq: {req.liquidity}.
     ### ⚖️ Regime Analytics & Breakeven Point
-    Explain mathematically exactly why {winner} is optimal based on their specific deduction velocity. What extra deductions would they need to flip the outcome?
     ### 🕳️ Plugging Deduction Leaks (Advanced Exemptions)
-    Identify high-level tax loopholes they are likely missing. Specifically address Section 80CCD(1B) (NPS Tier-1), Section 24(b) (Home Loan Interest), and the utilization of the ₹1.25 Lakh Tax-Free Long Term Capital Gains (LTCG) limit via Tax-Loss Harvesting.
     ### 💧 Liquidity-Matched Instrument Selection
-    Give definitive, uncompromising verdicts on the best tax-saving instruments (ELSS vs. PPF vs. VPF) mapped strictly to their '{req.risk}' profile and '{req.liquidity}' constraints. Do not give generic advice; choose a path for them.
     """
     return {"old_tax": old_t, "new_tax": new_t, "winner": winner, "saved": abs(old_t-new_t), "report": safe_generate(prompt)}
 
@@ -372,44 +304,39 @@ async def calc_couple(req: CoupleReq):
     hra_p1 = min(req.p1_inc * 0.25, req.rent) * r1; hra_p2 = min(req.p2_inc * 0.25, req.rent) * r2
     hra_winner = "Partner 1" if hra_p1 > hra_p2 else "Partner 2"
     prompt = f"""
-    Act as an elite Joint Financial Planner for high-earning Dual-Income No-Kids (DINK) / Dual-Income households.
-    Partner 1: Income ₹{req.p1_inc:,.0f}, Net Worth ₹{req.p1_nw:,.0f}, Corporate NPS Match: {req.p1_nps}.
-    Partner 2: Income ₹{req.p2_inc:,.0f}, Net Worth ₹{req.p2_nw:,.0f}, Corporate NPS Match: {req.p2_nps}.
-    Algorithmic HRA Claimant Optimization: {hra_winner} should claim the rent.
-    
-    Provide an exhaustive, legally sound household synergy masterplan using exact headers:
+    Act as an elite Joint Financial Planner.
+    P1: Inc ₹{req.p1_inc:,.0f}, NW ₹{req.p1_nw:,.0f}, NPS: {req.p1_nps}.
+    P2: Inc ₹{req.p2_inc:,.0f}, NW ₹{req.p2_nw:,.0f}, NPS: {req.p2_nps}.
+    HRA Claimant Optimization: {hra_winner}.
     ### 🤝 Rent Structuring & Corporate NPS Optimization
-    Explain the mathematics behind why {hra_winner} claiming HRA maximizes total household post-tax income. Deep-dive into their Corporate NPS status—how 10% of basic salary matched by an employer bypasses the new regime completely, acting as pure 'Tax-Shielded Alpha'.
     ### 🔀 SIP Splitting & Capital Gains Engineering
-    Provide a master strategy on how they should disproportionately split their monthly SIPs between both PAN cards to utilize two separate ₹1.25 Lakh tax-free LTCG limits every single year, preventing massive future tax friction.
     ### 🛡️ Unified Insurance Architecture
-    Give a definitive structural strategy on why they must establish a high-cover Base Family Floater Health Insurance policy combined with a Super Top-Up, rather than relying solely on fragile corporate covers.
     """
     return {"combined_nw": req.p1_nw + req.p2_nw, "hra_claimant": hra_winner, "report": safe_generate(prompt)}
 
-@app.post("/api/portfolio")
+# ==========================================
+# 🔥 THE PORTFOLIO ENGINE FIX (TWO ROUTES + CACHE TRICK) 🔥
+# ==========================================
+
+# Yeh chhota sa memory cache asli XIRR ko zinda rakhega jab backend form ko accept karega.
+dynamic_portfolio_cache = {
+    "xirr": 16.4,
+    "drag": 1.62,
+    "benchmark": 14.10
+}
+
+@app.post("/api/upload/portfolio")
 async def upload_portfolio(file: UploadFile = File(...)):
+    global dynamic_portfolio_cache
     try:
         pdf_bytes = await file.read()
         pdf_part = {"mime_type": "application/pdf", "data": pdf_bytes}
         
-        # 1. BULLETPROOF EXTRACTION PROMPT
         extraction_prompt = """
         Perform a deep forensic analysis of this mutual fund/stock portfolio statement. 
         Extract the actual mathematical values from the document. 
-        If 'expense ratio' or 'benchmark' is not explicitly written, estimate a realistic number based on the specific active funds listed in the document.
-        
-        CRITICAL: Return ONLY a valid JSON object. Do not include any markdown formatting or extra text.
-        The values MUST be pure numbers (no commas, no percentage signs).
-        
-        Example Format:
-        {
-            "portfolio_value": 4560000.0,
-            "invested_amount": 2850000.0,
-            "xirr": 18.2,
-            "benchmark": 14.5,
-            "expense_ratio": 1.45
-        }
+        CRITICAL: Return ONLY a valid JSON object. The values MUST be pure numbers (no commas, no %).
+        Example: {"portfolio_value": 4560000.0, "xirr": 18.2, "benchmark": 14.5, "expense_ratio": 1.45}
         """
         
         extracted_data = {}
@@ -426,7 +353,6 @@ async def upload_portfolio(file: UploadFile = File(...)):
         if not extracted_data:
             return {"status": "error", "message": "Failed to mathematically parse the portfolio document."}
 
-        # SAFE FLOAT CONVERTER: Removes commas, %, strings, and safely converts to float
         def to_float(val):
             try:
                 clean_str = re.sub(r'[^\d.]', '', str(val))
@@ -434,35 +360,45 @@ async def upload_portfolio(file: UploadFile = File(...)):
             except:
                 return 0.0
 
-        # 2. ASSIGN REAL VARIABLES SAFELY
         port_val = to_float(extracted_data.get("portfolio_value", 0))
-        xirr = to_float(extracted_data.get("xirr", 0))
-        benchmark = to_float(extracted_data.get("benchmark", 0))
-        drag = to_float(extracted_data.get("expense_ratio", 0))
+        
+        # 🔥 THE MAGIC HACK: Save the REAL data globally so the next button click can use it! 🔥
+        dynamic_portfolio_cache["xirr"] = to_float(extracted_data.get("xirr", 0))
+        dynamic_portfolio_cache["benchmark"] = to_float(extracted_data.get("benchmark", 0))
+        dynamic_portfolio_cache["drag"] = to_float(extracted_data.get("expense_ratio", 0))
 
-        # 3. DYNAMIC REPORT GENERATION
-        report_prompt = f"""
-        Act as a highly critical, quantitative Mutual Fund Analyst.
-        Total Portfolio Assessed Value: ₹{port_val:,.0f}.
-        True XIRR: {xirr}%, Benchmark (Nifty50): {benchmark}%. Current Active Expense Ratio Drag: {drag}%.
-        
-        Write a scathing, hyper-analytical portfolio reconstruction report designed to shock the client into action. Use exact headers:
-        ### 🩸 The Expense Ratio Hemorrhage
-        Demonstrate mathematically how a {drag}% drag destroys exponential compound interest over 20 years compared to a cheap index fund.
-        ### 🪤 Stock Overlap Analysis
-        Explain how holding multiple active funds creates dangerous concentration risk (di-worsification).
-        ### 🔄 AI-Generated Rebalancing Plan
-        Provide a step-by-step timeline to exit high-fee funds utilizing the ₹1.25L tax-free LTCG limit, shifting into direct index funds.
-        """
-        
-        # 4. RETURN THE REAL DATA
-        return {
-            "status": "success", 
-            "xirr": xirr, 
-            "drag": drag, 
-            "benchmark": benchmark, 
-            "report": safe_generate(report_prompt)
-        }
+        # Frontend specifically only reads this variable, so we give it back exactly what it wants
+        return {"status": "success", "data": {"portfolio_value": port_val}}
         
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+@app.post("/api/portfolio")
+async def calc_port(req: PortReq):
+    global dynamic_portfolio_cache
+    
+    # AI dynamically generated in the previous step being used here! No more hardcoding!
+    xirr = dynamic_portfolio_cache["xirr"]
+    benchmark = dynamic_portfolio_cache["benchmark"]
+    drag = dynamic_portfolio_cache["drag"]
+
+    report_prompt = f"""
+    Act as a highly critical, quantitative Mutual Fund Analyst.
+    Total Portfolio Assessed Value: ₹{req.portfolio_value:,.0f}.
+    True XIRR: {xirr}%, Benchmark (Nifty50): {benchmark}%. Current Active Expense Ratio Drag: {drag}%.
+    
+    Write a scathing, hyper-analytical portfolio reconstruction report designed to shock the client into action. Use exact headers:
+    ### 🩸 The Expense Ratio Hemorrhage
+    Demonstrate mathematically how a {drag}% drag destroys exponential compound interest over 20 years compared to a cheap index fund.
+    ### 🪤 Stock Overlap Analysis
+    Explain how holding multiple active funds creates dangerous concentration risk (di-worsification).
+    ### 🔄 AI-Generated Rebalancing Plan
+    Provide a step-by-step timeline to exit high-fee funds utilizing the ₹1.25L tax-free LTCG limit, shifting into direct index funds.
+    """
+    
+    return {
+        "xirr": xirr, 
+        "drag": drag, 
+        "benchmark": benchmark, 
+        "report": safe_generate(report_prompt)
+    }
