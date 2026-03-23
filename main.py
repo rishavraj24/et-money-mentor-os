@@ -47,7 +47,7 @@ class FireReq(BaseModel): age: int; income: float; retire_age: int; expenses: fl
 class TranslateReq(BaseModel): text: str; language: str
 
 def get_high_quota_models():
-    return ["gemini-1.5-flash"]
+    return ["gemini-flash-latest"]
 
 def safe_generate(prompt: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
