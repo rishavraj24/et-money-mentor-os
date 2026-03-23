@@ -18,7 +18,6 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 if API_KEY:
     genai.configure(api_key=API_KEY)
 
-# Safety settings completely relaxed to prevent false-flag blocking on financial terms
 safe_config = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -394,18 +393,22 @@ async def upload_portfolio(file: UploadFile = File(...)):
         pdf_bytes = await file.read()
         pdf_part = {"mime_type": "application/pdf", "data": pdf_bytes}
         
-        # 1. REAL EXTRACTION: Force AI to read the actual numbers from the PDF
+        # 1. BULLETPROOF EXTRACTION PROMPT
         extraction_prompt = """
         Perform a deep forensic analysis of this mutual fund/stock portfolio statement. 
         Extract the actual mathematical values from the document. 
         If 'expense ratio' or 'benchmark' is not explicitly written, estimate a realistic number based on the specific active funds listed in the document.
-        Return ONLY a valid JSON object in this exact format, with no additional text:
+        
+        CRITICAL: Return ONLY a valid JSON object. Do not include any markdown formatting or extra text.
+        The values MUST be pure numbers (no commas, no percentage signs).
+        
+        Example Format:
         {
-            "portfolio_value": (float, current total value),
-            "invested_amount": (float, total money invested),
-            "xirr": (float, the actual XIRR or annualized return percentage),
-            "benchmark": (float, the benchmark index return percentage, e.g., Nifty 50),
-            "expense_ratio": (float, the average expense ratio of the active funds)
+            "portfolio_value": 4560000.0,
+            "invested_amount": 2850000.0,
+            "xirr": 18.2,
+            "benchmark": 14.5,
+            "expense_ratio": 1.45
         }
         """
         
@@ -423,11 +426,19 @@ async def upload_portfolio(file: UploadFile = File(...)):
         if not extracted_data:
             return {"status": "error", "message": "Failed to mathematically parse the portfolio document."}
 
-        # 2. ASSIGN REAL VARIABLES
-        port_val = float(extracted_data.get("portfolio_value", 0))
-        xirr = float(extracted_data.get("xirr", 0))
-        benchmark = float(extracted_data.get("benchmark", 0))
-        drag = float(extracted_data.get("expense_ratio", 0))
+        # SAFE FLOAT CONVERTER: Removes commas, %, strings, and safely converts to float
+        def to_float(val):
+            try:
+                clean_str = re.sub(r'[^\d.]', '', str(val))
+                return float(clean_str) if clean_str else 0.0
+            except:
+                return 0.0
+
+        # 2. ASSIGN REAL VARIABLES SAFELY
+        port_val = to_float(extracted_data.get("portfolio_value", 0))
+        xirr = to_float(extracted_data.get("xirr", 0))
+        benchmark = to_float(extracted_data.get("benchmark", 0))
+        drag = to_float(extracted_data.get("expense_ratio", 0))
 
         # 3. DYNAMIC REPORT GENERATION
         report_prompt = f"""
