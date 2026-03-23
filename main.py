@@ -38,7 +38,6 @@ def serve_frontend():
         return FileResponse("index.html")
     return {"error": "index.html missing!"}
 
-# --- DATA MODELS ---
 class HealthReq(BaseModel): q1: int; q2: int; q3: int; q4: int; q5: int; q6: int;
 class TaxReq(BaseModel): salary: float; hra: float; sec80c: float; sec80d: float; risk: str; liquidity: str;
 class CoupleReq(BaseModel): p1_inc: float; p2_inc: float; p1_nw: float; p2_nw: float; rent: float; p1_nps: bool; p2_nps: bool;
@@ -47,12 +46,9 @@ class PortReq(BaseModel): portfolio_value: float;
 class FireReq(BaseModel): age: int; income: float; retire_age: int; expenses: float; corpus: float; goals: str; life_expectancy: int; step_up_pct: float;
 class TranslateReq(BaseModel): text: str; language: str
 
-# --- 🔥 THE BULLETPROOF MODEL FALLBACK LOGIC 🔥 ---
 def get_high_quota_models():
-    # Bhaad me gaya dynamic check. Seedha latest Google models use karenge.
-    return ["gemini-1.5-flash", "gemini-1.5-pro"]
+    return ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"]
 
-# Standard generation for strictly formatted English reports (The Core Engine)
 def safe_generate(prompt: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
     last_error = ""
@@ -80,7 +76,6 @@ def safe_generate(prompt: str, image_part: dict = None) -> str:
             continue
     return f"⚠️ API Error: {last_error}"
 
-# Specialized generation for localized chat
 def safe_chat_generate(prompt: str, language: str, image_part: dict = None) -> str:
     if not API_KEY: return "⚠️ API Key missing."
     
@@ -113,7 +108,6 @@ def extract_json_from_text(text: str):
     except:
         return {}
 
-# --- ON-DEMAND TRANSLATION ENDPOINT ---
 @app.post("/api/translate")
 async def translate_text(req: TranslateReq):
     if req.language.lower() == "english":
@@ -143,7 +137,6 @@ async def translate_text(req: TranslateReq):
             continue
     return {"translated_text": req.text + "\n\n*(Translation failed. Please try again.)*"}
 
-# --- UPLOAD ENDPOINTS ---
 @app.post("/api/upload/form16")
 async def upload_form16(file: UploadFile = File(...)):
     try:
@@ -178,7 +171,6 @@ async def upload_portfolio(file: UploadFile = File(...)):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# --- CHATBOT ---
 @app.post("/api/chat")
 async def chat_bot(message: str = Form(...), language: str = Form(...), image: Optional[UploadFile] = File(None)):
     prompt = f"You are ET Money Mentor, an elite and highly-paid institutional wealth manager. Provide detailed, step-by-step financial wisdom based on Indian taxation and SEBI rules. User Query: '{message}'"
@@ -188,7 +180,6 @@ async def chat_bot(message: str = Form(...), language: str = Form(...), image: O
         image_part = {"mime_type": image.content_type, "data": image_bytes}
     return {"reply": safe_chat_generate(prompt, language, image_part)}
 
-# --- 🔥 EXHAUSTIVE FEATURE ENDPOINTS (ENGLISH CORE) 🔥 ---
 @app.post("/api/health")
 async def calc_health(req: HealthReq):
     q1_norm = (req.q1 / 12) * 10
